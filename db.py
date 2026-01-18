@@ -1,7 +1,13 @@
-import os
 import psycopg2
 import streamlit as st
+import os
+from dotenv import load_dotenv
 
-@st.cache_resource
+
+load_dotenv()
+
 def get_conn():
-    return psycopg2.connect(os.getenv("DATABASE_URL"))
+    db_url = st.secrets.get("DATABASE_URL") or os.getenv("DATABASE_URL")
+    if not db_url:
+        raise RuntimeError("DATABASE_URL bulunamadı")
+    return psycopg2.connect(db_url)
