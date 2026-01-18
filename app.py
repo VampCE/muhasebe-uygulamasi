@@ -7,7 +7,6 @@ from pages.quick_entry import render as render_quick
 from pages.master_data import render as render_master
 from pages.list_export import render as render_list
 
-load_dotenv()
 
 st.set_page_config("Hafriyat Takip", layout="wide")
 
