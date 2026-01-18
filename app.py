@@ -1,6 +1,6 @@
-import os
+
 import streamlit as st
-from dotenv import load_dotenv
+
 from db import get_conn
 
 from pages.quick_entry import render as render_quick
