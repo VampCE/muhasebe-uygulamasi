@@ -2,6 +2,15 @@ import os
 import psycopg2
 import streamlit as st
 
-@st.cache_resource
 def get_conn():
-    return psycopg2.connect(os.getenv("DATABASE_URL"))
+    db_url = None
+
+    if "DATABASE_URL" in st.secrets:
+        db_url = st.secrets["DATABASE_URL"]
+    else:
+        db_url = os.getenv("DATABASE_URL")
+
+    if not db_url:
+        raise RuntimeError("DATABASE_URL tanımlı değil")
+
+    return psycopg2.connect(db_url)
