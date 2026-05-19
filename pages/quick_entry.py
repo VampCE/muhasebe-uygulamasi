@@ -41,10 +41,19 @@ def render(conn, cur):
         dump = st.selectbox("📍 Döküm (opsiyonel)", ["—"] + list(dumps.keys()))
 
     col9, col10 = st.columns(2)
+
     with col9:
         unit_price = st.number_input("💰 Birim Fiyat", min_value=0.0, step=1.0)
-    with col10:
-        st.metric("Tutar", f"{quantity * unit_price:,.2f}")
+
+    # VINÇ için manuel tutar
+    if machine and "vinç" in machine.lower():
+        with col10:
+            total = st.number_input("Tutar", min_value=0.0, step=1.0)
+    else:
+        total = quantity * unit_price
+        with col10:
+            st.metric("Tutar", f"{total:,.2f}")
+
 
     if st.button("💾 KAYDET", use_container_width=True):
         if not all([companies, employees, machines, jobs, units]):
@@ -65,7 +74,8 @@ def render(conn, cur):
             units[unit],
             dumps.get(dump) if dump != "—" else None,
             unit_price,
+            total,
             subcontractor_id=subcontractor_id
-        )
+            )
         st.success("Kayıt eklendi.")
         st.rerun()

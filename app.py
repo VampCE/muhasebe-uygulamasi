@@ -6,6 +6,8 @@ from db import get_conn
 from pages.quick_entry import render as render_quick
 from pages.master_data import render as render_master
 from pages.list_export import render as render_list
+from pages.import_excel import render as render_import
+
 
 
 st.set_page_config("Hafriyat Takip", layout="wide")
@@ -14,11 +16,11 @@ st.set_page_config("Hafriyat Takip", layout="wide")
 conn = get_conn()
 cur = conn.cursor()
 
-st.sidebar.title("Menü")
 menu = st.sidebar.radio(
     "",
-    ["➕ Hızlı Kayıt", "📚 Tanımlar", "📋 Liste / Export"]
+    ["➕ Hızlı Kayıt", "📚 Tanımlar", "📋 Liste / Export", "📥 Excel Yükle"]
 )
+
 
 if menu == "➕ Hızlı Kayıt":
     render_quick(conn, cur)
@@ -28,3 +30,6 @@ elif menu == "📚 Tanımlar":
 
 elif menu == "📋 Liste / Export":
     render_list(conn, cur)
+
+elif menu == "📥 Excel Yükle":
+    render_import(conn, cur)
