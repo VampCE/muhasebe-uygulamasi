@@ -1,6 +1,6 @@
-import os
+
 import streamlit as st
-from dotenv import load_dotenv
+
 from db import get_conn
 
 from pages.quick_entry import render as render_quick
@@ -9,7 +9,6 @@ from pages.list_export import render as render_list
 from pages.import_excel import render as render_import
 
 
-load_dotenv()
 
 st.set_page_config("Hafriyat Takip", layout="wide")
 
