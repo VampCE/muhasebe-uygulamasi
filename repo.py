@@ -35,15 +35,10 @@ def insert_subcontractor(conn, cur, company_id: int, name: str):
     conn.commit()
 
 # ---------- Records ----------
-def insert_record(
-    conn, cur,
-    work_date, company_id, employee_id, machine_id, job_id,
-    quantity, unit_id, dump_site_id, unit_price,
-    subcontractor_id=None
-):
-    qty = float(quantity or 0)
-    up = float(unit_price or 0)
-    total = qty * up
+def insert_record(conn, cur, work_date, company_id, employee_id,
+                  machine_id, job_id, quantity, unit_id,
+                  dump_site_id, unit_price, total,
+                  subcontractor_id=None):
 
     cur.execute("""
         INSERT INTO records
@@ -52,10 +47,11 @@ def insert_record(
         VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
     """, (
         work_date, company_id, employee_id, machine_id, job_id,
-        qty, unit_id, dump_site_id, up, total,
-        subcontractor_id
+        quantity, unit_id, dump_site_id, unit_price, total, subcontractor_id
     ))
+
     conn.commit()
+
 
 def load_records_df(cur, start_date, end_date, company_id=None):
     q = """
@@ -86,7 +82,7 @@ def load_records_df(cur, start_date, end_date, company_id=None):
     if company_id:
         q += " AND r.company_id=%s"
         params.append(company_id)
-    q += " ORDER BY r.work_date DESC, r.id DESC"
+    q += " ORDER BY r.work_date ASC, r.id DESC"
 
     cur.execute(q, params)
     rows = cur.fetchall()
@@ -95,6 +91,7 @@ def load_records_df(cur, start_date, end_date, company_id=None):
     df = pd.DataFrame(rows, columns=cols)
     df.insert(0, "Seç", False)
     return df
+
 
 def update_selected_rows(conn, cur, edited_df):
     selected = edited_df[edited_df["Seç"] == True].copy()
@@ -105,16 +102,59 @@ def update_selected_rows(conn, cur, edited_df):
         rid = int(r["id"])
         qty = float(r["Miktar"] or 0)
         up  = float(r["Birim Fiyat"] or 0)
-        total = qty * up
+
+        # MANUEL TUTAR DESTEKLİ
+        if "Tutar" in r and r["Tutar"] not in [None, ""] and r["Tutar"] != 0:
+            total = float(r["Tutar"])
+        else:
+            total = qty * up
 
         cur.execute("""
-            UPDATE records
+            UPDATE records r
             SET work_date=%s,
                 quantity=%s,
                 unit_price=%s,
-                total=%s
-            WHERE id=%s
-        """, (r["Tarih"], qty, up, total, rid))
+                total=%s,
+                company_id=(SELECT id FROM companies WHERE name=%s),
+                machine_id=(SELECT id FROM machines WHERE name=%s),
+                employee_id=(SELECT id FROM employees WHERE name=%s),
+                job_id=(SELECT id FROM jobs WHERE name=%s),
+                unit_id=(SELECT id FROM units WHERE name=%s),
+                dump_site_id=(SELECT id FROM dump_sites WHERE name=%s),
+                subcontractor_id=(
+                    SELECT id FROM subcontractors WHERE name=%s
+                )
+            WHERE r.id=%s
+        """, (
+            r["Tarih"],
+            qty,
+            up,
+            total,
+            r["Şirket"],
+            r["Makine"],
+            r["Çalışan"],
+            r["İş Türü"],
+            r["Birim"],
+            r["Döküm Yeri"],
+            r["Taşeron"],
+            rid
+        ))
 
     conn.commit()
     return len(selected)
+
+
+def delete_selected_rows(conn, cur, edited_df):
+    selected = edited_df[edited_df["Seç"] == True]
+    if selected.empty:
+        return 0
+
+    ids = selected["id"].astype(int).tolist()
+
+    cur.execute(
+        "DELETE FROM records WHERE id = ANY(%s)",
+        (ids,)
+    )
+    conn.commit()
+    return len(ids)
+
